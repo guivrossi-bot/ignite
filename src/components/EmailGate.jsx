@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 import { useLanguage, useUnit } from "../lib/contexts";
 import t from "../lib/translations";
 
@@ -11,7 +12,7 @@ export default function EmailGate({ onSubmit, onBack }) {
   const [company, setCompany] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!email || !email.includes("@")) {
       setError(
         lang === "en"
@@ -20,6 +21,29 @@ export default function EmailGate({ onSubmit, onBack }) {
           ? "Por favor ingresa un correo válido."
           : "Por favor insira um e-mail válido."
       );
+      return;
+    }
+    // Track response in Supabase
+    try {
+      const { error } = await supabase.from("ignite_leads").insert([
+        {
+          name,
+          company,
+          email,
+          lang,
+          unit,
+          total_savings: null,
+          apps_selected: null,
+          time_savings: null
+        }
+      ]);
+      if (error) {
+        setError(error.message || "Supabase error");
+        return;
+      }
+    } catch (e) {
+      setError(e.message || "Supabase insert error");
+      console.error("Supabase insert error", e);
       return;
     }
     onSubmit({ email, name, company });

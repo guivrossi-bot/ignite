@@ -222,6 +222,7 @@ function ResultCard({ appId, savings, timeSavings, totalSavings, data, unit, lan
   );
 }
 
+import { supabase } from "../lib/supabaseClient";
 function EmailBanner({ lang, totalSavings, apps, calcData, unit }) {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -236,7 +237,7 @@ function EmailBanner({ lang, totalSavings, apps, calcData, unit }) {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!email || !email.includes("@")) {
       setError(
         lang === "en" ? "Please enter a valid email." :
@@ -245,7 +246,31 @@ function EmailBanner({ lang, totalSavings, apps, calcData, unit }) {
       );
       return;
     }
-    console.log("LEAD:", { name, email, company, totalSavings });
+    // Track response in Supabase
+    try {
+      const { error } = await supabase.from("ignite_leads").insert([
+        {
+          name,
+          company,
+          email,
+          lang,
+          unit,
+          total_savings: totalSavings,
+          apps_selected: Array.isArray(apps) ? apps.join(",") : apps,
+          time_savings: calcData && typeof calcData === "object" && Object.values(calcData).length > 0
+            ? Object.values(calcData).reduce((sum, d) => sum + (d.timeSavings || 0), 0)
+            : null
+        }
+      ]);
+      if (error) {
+        setError(error.message || "Supabase error");
+        return;
+      }
+    } catch (e) {
+      setError(e.message || "Supabase insert error");
+      console.error("Supabase insert error", e);
+      return;
+    }
     setGenerated(true);
     generatePDF({ apps, calcData, unit, lang, userInfo: { name, email, company } });
   };
