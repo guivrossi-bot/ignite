@@ -4,7 +4,6 @@ import LandingPage from "./components/LandingPage";
 import ApplicationSelector from "./components/ApplicationSelector";
 import CalculatorForms from "./components/CalculatorForms";
 import LoadingScreen from "./components/LoadingScreen";
-import EmailGate from "./components/EmailGate";
 import ReportPage from "./components/ReportPage";
 
 export default function App() {
@@ -24,7 +23,6 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  const goToEmail = () => setStep("email");
   const goToReport = () => setStep("report");
 
   return (
@@ -58,16 +56,7 @@ export default function App() {
           {step === "loading" && (
             <LoadingScreen
               lang={lang}
-              onDone={goToEmail}
-            />
-          )}
-
-          {step === "email" && (
-            <EmailGate
-              apps={selectedApps}
-              calcData={calcData}
-              onSubmit={goToReport}
-              onBack={() => setStep("loading")}
+              onDone={goToReport}
             />
           )}
 

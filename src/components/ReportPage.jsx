@@ -4,6 +4,7 @@ import t from "../lib/translations";
 import { INDUSTRY_DEFAULTS, APP_CALC_MAP } from "../lib/calculators";
 import Footer from "./Footer";
 import { generatePDF } from "./ReportPDF";
+import { supabase } from "../lib/supabase";
 
 const APP_ICONS = {
   burnRate: "🔥", noPreheat: "🌡️", training: "🎓", setup: "⚙️",
@@ -222,7 +223,7 @@ function ResultCard({ appId, savings, timeSavings, totalSavings, data, unit, lan
   );
 }
 
-function EmailBanner({ lang, totalSavings, apps, calcData, unit }) {
+function EmailBanner({ lang, totalSavings, timeSavings, apps, calcData, unit }) {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [name, setName] = useState("");
@@ -236,7 +237,7 @@ function EmailBanner({ lang, totalSavings, apps, calcData, unit }) {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!email || !email.includes("@")) {
       setError(
         lang === "en" ? "Please enter a valid email." :
@@ -245,8 +246,21 @@ function EmailBanner({ lang, totalSavings, apps, calcData, unit }) {
       );
       return;
     }
-    console.log("LEAD:", { name, email, company, totalSavings });
     setGenerated(true);
+    try {
+      await supabase.from("ignite_leads").insert({
+        name,
+        company,
+        email,
+        lang,
+        unit,
+        total_savings: totalSavings,
+        time_savings: timeSavings,
+        apps_selected: apps,
+      });
+    } catch (err) {
+      console.error("Failed to save lead:", err);
+    }
     generatePDF({ apps, calcData, unit, lang, userInfo: { name, email, company } });
   };
 
@@ -432,11 +446,12 @@ export default function ReportPage({ apps, calcData, onRestart }) {
         <EmailBanner
           lang={lang}
           totalSavings={totalSavings}
+          timeSavings={totalTime}
           apps={apps}
           calcData={calcData}
           unit={unit}
-          onSubmit={(info) => { setLeadCaptured(true); console.log("Lead captured:", info); }}
-          onSkip={() => console.log("User skipped email banner")}
+          onSubmit={(info) => setLeadCaptured(true)}
+          onSkip={() => {}}
         />
 
         <div className="savings-hero">
