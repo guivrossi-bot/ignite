@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useLanguage, useUnit } from "../lib/contexts";
 import t from "../lib/translations";
+import { supabase } from "../lib/supabase";
 
-export default function EmailGate({ onSubmit, onBack }) {
+export default function EmailGate({ onSubmit, onBack, apps = [], calcData = {} }) {
   const { lang, setLang } = useLanguage();
   const { unit, setUnit } = useUnit();
   const tr = t[lang];
@@ -10,8 +11,9 @@ export default function EmailGate({ onSubmit, onBack }) {
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!email || !email.includes("@")) {
       setError(
         lang === "en"
@@ -22,7 +24,24 @@ export default function EmailGate({ onSubmit, onBack }) {
       );
       return;
     }
-    onSubmit({ email, name, company });
+
+    setLoading(true);
+    try {
+      await supabase.from("ignite_leads").insert({
+        name,
+        company,
+        email,
+        apps_selected: apps,
+        calc_data: calcData,
+        language: lang,
+        unit_system: unit,
+      });
+    } catch (err) {
+      console.error("Failed to save lead:", err);
+    } finally {
+      setLoading(false);
+      onSubmit({ email, name, company });
+    }
   };
 
   return (
@@ -116,7 +135,9 @@ export default function EmailGate({ onSubmit, onBack }) {
 
           <div className="nav-buttons" style={{ justifyContent: "center", gap: "12px" }}>
             <button className="btn-secondary" onClick={onBack}>{tr.backBtn}</button>
-            <button className="btn-primary" onClick={handleSubmit}>{tr.emailBtn} →</button>
+            <button className="btn-primary" onClick={handleSubmit} disabled={loading}>
+              {loading ? "..." : `${tr.emailBtn} →`}
+            </button>
           </div>
         </div>
       </div>
