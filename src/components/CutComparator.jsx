@@ -30,7 +30,7 @@ const REF = {
 // otherwise Official manufacturer cut chart.
 function refCat(row) {
   if (row._estimated)              return "estimated";
-  if (row._source === "jetcalc")   return "calculator";
+  if (row._source === "jetcalc" || row._source === "lasercalc") return "calculator";
   const model = row.platform?.model ?? "";
   if (/generic/i.test(model))      return "generic";
   return "official";
@@ -133,6 +133,53 @@ const JC_MATERIAL_MAP = {
   "Nickel":            { mi: 0.82 },
 };
 
+// ── LaserCalc integration — formula reverse-engineered from lasercalcpro.com ──
+// Source: lasercalcpro.com/calculators/laser-cutting (page JS chunk analysis)
+// Formula: speed = baseSpeed × √(powerKw) × (1 − 0.3 × reflectivity) / √(thickness)
+
+const LASER_TIERS = [
+  { id: "3kw",  label: "3 kW",  kw: 3  },
+  { id: "6kw",  label: "6 kW",  kw: 6  },
+  { id: "12kw", label: "12 kW", kw: 12 },
+  { id: "20kw", label: "20 kW", kw: 20 },
+  { id: "30kw", label: "30 kW", kw: 30 },
+];
+
+// Material constants from lasercalcpro.com source (exact values)
+const LC_MATERIAL_MAP = {
+  "MS":     { baseSpeed: 1000, reflectivity: 0.50, gas: "O2 / N2" },
+  "SS":     { baseSpeed: 800,  reflectivity: 0.60, gas: "N2"      },
+  "AL":     { baseSpeed: 1200, reflectivity: 0.90, gas: "N2"      },
+  "Copper": { baseSpeed: 600,  reflectivity: 0.95, gas: "N2"      },
+  "Brass":  { baseSpeed: 700,  reflectivity: 0.85, gas: "N2"      },
+};
+
+// Exact lasercalcpro formula — returns mm/min
+function lcSpeed(matKey, thicknessMm, powerKw) {
+  const mat = LC_MATERIAL_MAP[matKey];
+  if (!mat || thicknessMm <= 0 || powerKw <= 0) return null;
+  const v = mat.baseSpeed * Math.sqrt(powerKw) * (1 - 0.3 * mat.reflectivity) / Math.sqrt(thicknessMm);
+  return isFinite(v) && v > 0 ? Math.round(v) : null;
+}
+
+function buildLcRows(materialKey, thicknessMm) {
+  const mat = LC_MATERIAL_MAP[materialKey];
+  if (!mat || !thicknessMm) return [];
+  return LASER_TIERS.flatMap((tier) => {
+    const speed = lcSpeed(materialKey, thicknessMm, tier.kw);
+    if (speed == null || speed < 20) return [];
+    return [{
+      process:       "laser",
+      feedrate_mmpm: speed,
+      kerf_mm:       null,
+      _source:       "lasercalc",
+      _tier:         tier,
+      platform:      { model: `LaserCalc ${tier.label}` },
+      laser_params:  { cutting_mode: mat.gas, peak_power_w: tier.kw * 1000 },
+    }];
+  });
+}
+
 // Core JetCalc speed formula — returns mm/min for given tier + quality level
 function jcSpeed(mi, thicknessMm, tier, quality) {
   if (!mi || thicknessMm <= 0) return null;
@@ -198,7 +245,8 @@ function fmtLaserKw(model) {
 
 function rowLabel(r) {
   const platform = fmtPlatform(r.platform?.model);
-  if (r._source === "jetcalc") return `📐 ${platform}`;
+  if (r._source === "jetcalc")   return `📐 ${platform}`;
+  if (r._source === "lasercalc") return `🔆 ${platform}`;
   if (r._estimated)             return `EST ${platform}`;
   switch (r.process) {
     case "plasma":   return `${platform}${r.plasma_params?.cut_current_a != null ? ` · ${r.plasma_params.cut_current_a}A` : ""}`;
@@ -216,7 +264,8 @@ function dedupKey(row) {
     case "laser":
       return [platform, row.laser_params?.cutting_mode ?? "", row.laser_params?.peak_power_w ?? ""].join("|");
     case "waterjet":
-      if (row._source === "jetcalc") return `jetcalc|${row._tier?.id}`;
+      if (row._source === "jetcalc")   return `jetcalc|${row._tier?.id}`;
+      if (row._source === "lasercalc") return `lasercalc|${row._tier?.id}`;
       return [fmtPlatform(row.platform?.model), row.waterjet_params?.quality_level ?? ""].join("|");
     default:
       return platform;
@@ -292,7 +341,7 @@ function BarChart({ rows, valueKey, label, unit, ascending = false, formatVal })
       <div style={ch.bars}>
         {sorted.map((x, i) => {
           const col    = PROCESS_COLOR[x.row.process] || { bar: "#94a3b8" };
-          const isEst  = x.row._estimated || x.row._source === "jetcalc";
+          const isEst  = x.row._estimated || x.row._source === "jetcalc" || x.row._source === "lasercalc";
           const pct    = ascending
             ? ((maxVal - x.val) / (maxVal - (minVal ?? 0) || 1)) * 80 + 20
             : (x.val / maxVal) * 100;
@@ -437,6 +486,9 @@ export default function CutComparator({ onBack }) {
   const jcKey  = jcParams ? material : (exoticCfg ? exoticCfg.cutsLike : null);
   const jcRows = (jcKey && thickness) ? buildJcRows(jcKey, thickness.nominal) : [];
 
+  // LaserCalc rows — reverse-engineered lasercalcpro.com formula
+  const lcRows = (LC_MATERIAL_MAP[material] && thickness) ? buildLcRows(material, thickness.nominal) : [];
+
   // ── load distinct materials ─────────────────────────────────────────────────
   useEffect(() => {
     supabase
@@ -565,12 +617,17 @@ export default function CutComparator({ onBack }) {
   if (jcRows.length > 0) {
     grouped["waterjet"] = [...(grouped["waterjet"] || []), ...jcRows];
   }
+  // Inject LaserCalc rows into laser group
+  if (lcRows.length > 0) {
+    grouped["laser"] = [...(grouped["laser"] || []), ...lcRows];
+  }
 
   const allDeduped  = Object.values(grouped).flat();
   const maxSpeed    = allDeduped.length ? Math.max(...allDeduped.map((r) => r.feedrate_mmpm || 0)) : 0;
   const minKerf     = Math.min(...allDeduped.filter((r) => r.kerf_mm != null).map((r) => r.kerf_mm));
   const hasResults  = allDeduped.length > 0;
-  const dbCount     = results.length > 0 ? Object.values(grouped).flat().filter((r) => !r._estimated && r._source !== "jetcalc").length : 0;
+  const isCalc = (r) => r._source === "jetcalc" || r._source === "lasercalc";
+  const dbCount = results.length > 0 ? Object.values(grouped).flat().filter((r) => !r._estimated && !isCalc(r)).length : 0;
 
   return (
     <div style={s.page}>
@@ -581,7 +638,7 @@ export default function CutComparator({ onBack }) {
           <h1 style={s.title}>Cut Process Comparator</h1>
           <p style={s.sub}>
             Select material and thickness to compare all technologies.
-            Data sources: cut-chart DB · JetCalc formula · exotic metal estimates.
+            Data sources: cut-chart DB · JetCalc (waterjet) · LaserCalc (laser 3–30 kW) · exotic metal estimates.
           </p>
         </div>
       </div>
@@ -627,7 +684,9 @@ export default function CutComparator({ onBack }) {
         <span style={{ ...s.refTag, background: REF.official.color }}>Manufacturer Cut Chart</span>
         <span style={s.sourceLegendText}>Official OEM data (Hypertherm XPR, Bodor, Bystronic…)</span>
         <span style={{ ...s.refTag, background: REF.calculator.color }}>Calculator Estimate</span>
-        <span style={s.sourceLegendText}>JetCalc formula · industrialcuttinglabs.com/jetcalc</span>
+        <span style={s.sourceLegendText}>JetCalc · industrialcuttinglabs.com/jetcalc (waterjet)</span>
+        <span style={{ ...s.refTag, background: REF.calculator.color }}>Calculator Estimate</span>
+        <span style={s.sourceLegendText}>LaserCalc · lasercalcpro.com formula (laser, 3–30 kW)</span>
         <span style={{ ...s.refTag, background: REF.estimated.color }}>Exotic Est.</span>
         <span style={s.sourceLegendText}>Exotic metal: reference material × speed factor</span>
       </div>
@@ -654,6 +713,7 @@ export default function CutComparator({ onBack }) {
               ? <><strong>{dbCount}</strong> cut-chart variants + </>
               : <span style={{ color: "#d97706" }}>No direct DB data — </span>}
             {jcRows.length > 0 && <><strong>{jcRows.length}</strong> JetCalc estimates + </>}
+            {lcRows.length > 0 && <><strong>{lcRows.length}</strong> LaserCalc estimates + </>}
             {estimatedRows.length > 0 && <><strong>{estimatedRows.length}</strong> exotic plasma estimates</>}
             &nbsp; for <strong>{material}</strong> @ <strong>{thickness.nominal} mm</strong>
             {thickness.values.length > 1 && (
@@ -738,7 +798,7 @@ export default function CutComparator({ onBack }) {
                         const isFastest = row.feedrate_mmpm === maxSpeed;
                         const isFinest  = row.kerf_mm != null && row.kerf_mm === minKerf;
                         const isEst     = row._estimated;
-                        const isJc      = row._source === "jetcalc";
+                        const isJc      = row._source === "jetcalc" || row._source === "lasercalc";
                         const rowStyle  = isEst
                           ? s.trEst
                           : isJc
