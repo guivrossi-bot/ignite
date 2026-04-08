@@ -5,6 +5,9 @@ import ApplicationSelector from "./components/ApplicationSelector";
 import CalculatorForms from "./components/CalculatorForms";
 import LoadingScreen from "./components/LoadingScreen";
 import ReportPage from "./components/ReportPage";
+import CutComparator from "./components/CutComparator";
+
+const isCompareMode = new URLSearchParams(window.location.search).has("compare");
 
 export default function App() {
   const [lang, setLang] = useState("en");
@@ -24,6 +27,8 @@ export default function App() {
   }, []);
 
   const goToReport = () => setStep("report");
+
+  if (isCompareMode) return <CutComparator />;
 
   return (
     <LanguageContext.Provider value={{ lang, setLang }}>
