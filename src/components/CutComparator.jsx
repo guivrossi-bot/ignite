@@ -377,7 +377,7 @@ function RefTag({ row }) {
   const ref = REF[cat];
   let label = ref.label;
   if (cat === "official")    label = refBrand(row);
-  if (cat === "calculator")  label = "JetCalc";
+  if (cat === "calculator")  label = row._source === "lasercalc" ? "LaserCalc" : "JetCalc";
   if (cat === "estimated")   label = `Est. (${row._estGas ? "Plasma" : "WJ"})`;
   return (
     <span style={{ ...s.refTag, background: ref.color, color: "#fff" }} title={ref.label}>
@@ -683,10 +683,10 @@ export default function CutComparator({ onBack }) {
         <span style={s.sourceLegendText}>Industry reference (Flow, OMAX, generic oxyfuel)</span>
         <span style={{ ...s.refTag, background: REF.official.color }}>Manufacturer Cut Chart</span>
         <span style={s.sourceLegendText}>Official OEM data (Hypertherm XPR, Bodor, Bystronic…)</span>
-        <span style={{ ...s.refTag, background: REF.calculator.color }}>Calculator Estimate</span>
-        <span style={s.sourceLegendText}>JetCalc · industrialcuttinglabs.com/jetcalc (waterjet)</span>
-        <span style={{ ...s.refTag, background: REF.calculator.color }}>Calculator Estimate</span>
-        <span style={s.sourceLegendText}>LaserCalc · lasercalcpro.com formula (laser, 3–30 kW)</span>
+        <span style={{ ...s.refTag, background: REF.calculator.color }}>JetCalc</span>
+        <span style={s.sourceLegendText}>Waterjet speed formula · industrialcuttinglabs.com/jetcalc</span>
+        <span style={{ ...s.refTag, background: REF.calculator.color }}>LaserCalc</span>
+        <span style={s.sourceLegendText}>Fiber laser estimate (3–30 kW) · lasercalcpro.com formula</span>
         <span style={{ ...s.refTag, background: REF.estimated.color }}>Exotic Est.</span>
         <span style={s.sourceLegendText}>Exotic metal: reference material × speed factor</span>
       </div>
