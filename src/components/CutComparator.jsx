@@ -355,7 +355,8 @@ function pmCatFromClass(cls) {
 
 // ── Process category cell — XPR (Cat 1–5) or Powermax SYNC (quality tier) ────
 function ProcessCatCell({ row }) {
-  const [tip, setTip] = useState(false);
+  // tipPos: {x, y} in viewport coords (position: fixed) — bypasses overflow:auto clipping
+  const [tipPos, setTipPos] = useState(null);
 
   // XPR: xpr_process_features = integer 1–5
   const xprCat = XPR_CATEGORY[row.plasma_params?.xpr_process_features];
@@ -371,24 +372,30 @@ function ProcessCatCell({ row }) {
 
   if (!cat) return <span style={{ color: "#94a3b8" }}>—</span>;
 
+  function handleEnter(e) {
+    const r = e.currentTarget.getBoundingClientRect();
+    setTipPos({ x: r.left + r.width / 2, y: r.top - 10 });
+  }
+
   return (
-    <div style={{ position: "relative", display: "inline-block" }}
-      onMouseEnter={() => setTip(true)}
-      onMouseLeave={() => setTip(false)}>
+    <div style={{ display: "inline-block" }}
+      onMouseEnter={handleEnter}
+      onMouseLeave={() => setTipPos(null)}>
       {/* Pill */}
       <span style={{ ...s.catPill, color: cat.color, borderColor: cat.color, cursor: "help" }}>
         {cat.edgeStart && <span style={{ marginRight: 3 }}>⚠</span>}
         {cat.short}
       </span>
-      {/* Hover tooltip */}
-      {tip && (
+      {/* Tooltip — position:fixed so it escapes overflow:auto and any stacking context */}
+      {tipPos && (
         <div style={{
-          position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
-          transform: "translateX(-50%)",
+          position: "fixed",
+          left: tipPos.x, top: tipPos.y,
+          transform: "translate(-50%, -100%)",
           background: "#1e293b", color: "#f8fafc",
           borderRadius: 8, padding: "10px 14px",
           fontSize: 12, lineHeight: 1.55,
-          width: 270, zIndex: 1000,
+          width: 270, zIndex: 9999,
           boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
           pointerEvents: "none",
           whiteSpace: "normal",
