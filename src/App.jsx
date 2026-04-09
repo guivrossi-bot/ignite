@@ -6,6 +6,7 @@ import CalculatorForms from "./components/CalculatorForms";
 import LoadingScreen from "./components/LoadingScreen";
 import ReportPage from "./components/ReportPage";
 import CutComparator from "./components/CutComparator";
+import { generateSessionId, trackReachedReport } from "./lib/sessionTracker";
 
 const isCompareMode = new URLSearchParams(window.location.search).has("compare");
 
@@ -15,6 +16,7 @@ export default function App() {
   const [step, setStep] = useState("landing");
   const [selectedApps, setSelectedApps] = useState([]);
   const [calcData, setCalcData] = useState({});
+  const [sessionId] = useState(() => generateSessionId());
 
   useEffect(() => {
     fetch("https://ipapi.co/json/")
@@ -26,7 +28,10 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  const goToReport = () => setStep("report");
+  const goToReport = () => {
+    trackReachedReport(sessionId, { apps: selectedApps, calcData, lang, unit });
+    setStep("report");
+  };
 
   if (isCompareMode) return <CutComparator />;
 
@@ -69,6 +74,7 @@ export default function App() {
             <ReportPage
               apps={selectedApps}
               calcData={calcData}
+              sessionId={sessionId}
               onRestart={() => {
                 setStep("landing");
                 setSelectedApps([]);

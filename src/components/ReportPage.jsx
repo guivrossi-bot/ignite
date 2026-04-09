@@ -223,7 +223,8 @@ function ResultCard({ appId, savings, timeSavings, totalSavings, data, unit, lan
 }
 
 import { supabase } from "../lib/supabaseClient";
-function EmailBanner({ lang, totalSavings, apps, calcData, unit }) {
+import { trackSentLead } from "../lib/sessionTracker";
+function EmailBanner({ lang, totalSavings, apps, calcData, unit, sessionId }) {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [name, setName] = useState("");
@@ -271,6 +272,7 @@ function EmailBanner({ lang, totalSavings, apps, calcData, unit }) {
       console.error("Supabase insert error", e);
       return;
     }
+    trackSentLead(sessionId);
     setGenerated(true);
     generatePDF({ apps, calcData, unit, lang, userInfo: { name, email, company } });
   };
@@ -389,7 +391,7 @@ function EmailBanner({ lang, totalSavings, apps, calcData, unit }) {
   );
 }
 
-export default function ReportPage({ apps, calcData, onRestart }) {
+export default function ReportPage({ apps, calcData, sessionId, onRestart }) {
   const { lang, setLang } = useLanguage();
   const { unit } = useUnit();
   const tr = t[lang];
@@ -460,6 +462,7 @@ export default function ReportPage({ apps, calcData, onRestart }) {
           apps={apps}
           calcData={calcData}
           unit={unit}
+          sessionId={sessionId}
           onSubmit={(info) => { setLeadCaptured(true); console.log("Lead captured:", info); }}
           onSkip={() => console.log("User skipped email banner")}
         />
