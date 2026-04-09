@@ -5,29 +5,25 @@ export function generateSessionId() {
 }
 
 export async function trackReachedReport(sessionId, { apps, calcData, lang, unit }) {
-  if (!supabase) return;
-  try {
-    await supabase.from('calc_sessions').upsert([{
-      session_id: sessionId,
-      source: 'ignite',
-      apps_selected: apps,
-      calc_data: calcData,
-      lang,
-      unit,
-      reached_report: true,
-    }], { onConflict: 'session_id' });
-  } catch (e) {
-    console.warn('trackReachedReport', e);
-  }
+  if (!supabase) { console.warn('[tracker] supabase client is null'); return; }
+  const { error } = await supabase.from('calc_sessions').upsert([{
+    session_id: sessionId,
+    source: 'ignite',
+    apps_selected: apps,
+    calc_data: calcData,
+    lang,
+    unit,
+    reached_report: true,
+  }], { onConflict: 'session_id' });
+  if (error) console.warn('[tracker] trackReachedReport error:', error);
+  else console.log('[tracker] trackReachedReport ok', sessionId);
 }
 
 export async function trackSentLead(sessionId) {
-  if (!supabase) return;
-  try {
-    await supabase.from('calc_sessions')
-      .update({ sent_lead: true, updated_at: new Date().toISOString() })
-      .eq('session_id', sessionId);
-  } catch (e) {
-    console.warn('trackSentLead', e);
-  }
+  if (!supabase) { console.warn('[tracker] supabase client is null'); return; }
+  const { error } = await supabase.from('calc_sessions')
+    .update({ sent_lead: true, updated_at: new Date().toISOString() })
+    .eq('session_id', sessionId);
+  if (error) console.warn('[tracker] trackSentLead error:', error);
+  else console.log('[tracker] trackSentLead ok', sessionId);
 }
