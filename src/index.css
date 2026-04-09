@@ -14,6 +14,39 @@
   --radius: 12px;
 }
 
+/* LIGHT MODE */
+[data-theme="light"] {
+  --navy: #f0f8ff;
+  --navy-mid: #ddeef8;
+  --navy-light: #c5e0f0;
+  --steel: #a0c8e0;
+  --plasma: #0097a7;
+  --spark: #e65100;
+  --text: #0a1929;
+  --text-muted: #4a6572;
+  --border: rgba(0, 150, 180, 0.22);
+  --card-bg: rgba(255, 255, 255, 0.88);
+}
+[data-theme="light"] body { background: var(--navy); }
+[data-theme="light"] .nav { background: rgba(240, 248, 255, 0.97); }
+[data-theme="light"] .stats-bar { background: rgba(221, 238, 248, 0.95); }
+[data-theme="light"] .savings-hero { background: var(--navy-mid); }
+[data-theme="light"] .tooltip { background: #ddeef8; }
+[data-theme="light"] .hero-title,
+[data-theme="light"] .page-title,
+[data-theme="light"] .section-title,
+[data-theme="light"] .form-title h3,
+[data-theme="light"] .app-card-title,
+[data-theme="light"] .result-header h3,
+[data-theme="light"] .tooltip-title,
+[data-theme="light"] .savings-amount,
+[data-theme="light"] .email-card h2 { color: var(--text); }
+[data-theme="light"] .form-field input { background: rgba(0,0,0,0.04); }
+[data-theme="light"] .lang-select,
+[data-theme="light"] .unit-toggle { background: rgba(0,0,0,0.05); }
+[data-theme="light"] .step { background: var(--navy-light); border-color: rgba(0,0,0,0.1); }
+[data-theme="light"] .step-line { background: rgba(0,0,0,0.1); }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {

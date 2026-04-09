@@ -7,6 +7,7 @@ import LoadingScreen from "./components/LoadingScreen";
 import ReportPage from "./components/ReportPage";
 import CutComparator from "./components/CutComparator";
 import { generateSessionId, trackReachedReport } from "./lib/sessionTracker";
+import ThemeToggle from "./components/ThemeToggle";
 
 const isCompareMode = new URLSearchParams(window.location.search).has("compare");
 
@@ -40,6 +41,7 @@ export default function App() {
     <LanguageContext.Provider value={{ lang, setLang }}>
       <UnitContext.Provider value={{ unit, setUnit }}>
         <div className="app-root">
+          <ThemeToggle />
 
           {step === "landing" && (
             <LandingPage onStart={() => setStep("select")} />
