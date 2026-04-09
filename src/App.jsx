@@ -18,7 +18,6 @@ export default function App() {
   const [selectedApps, setSelectedApps] = useState([]);
   const [calcData, setCalcData] = useState({});
   const [sessionId] = useState(() => generateSessionId());
-  console.log('[tracker] sessionId:', sessionId);
 
   useEffect(() => {
     fetch("https://ipapi.co/json/")
