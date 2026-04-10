@@ -249,18 +249,21 @@ function EmailBanner({ lang, totalSavings, apps, calcData, unit, sessionId }) {
     }
     // Track response in Supabase
     try {
-      const { error } = await supabase.from("ignite_leads").insert([
+      const { error } = await supabase.from("leads").insert([
         {
-          name,
-          company,
           email,
-          lang,
-          unit,
-          total_savings: totalSavings,
-          apps_selected: Array.isArray(apps) ? apps.join(",") : apps,
-          time_savings: calcData && typeof calcData === "object" && Object.values(calcData).length > 0
-            ? Object.values(calcData).reduce((sum, d) => sum + (d.timeSavings || 0), 0)
-            : null
+          first_name: name,
+          company,
+          source: "ignite",
+          payload: {
+            lang,
+            unit,
+            total_savings: totalSavings,
+            apps_selected: Array.isArray(apps) ? apps.join(",") : apps,
+            time_savings: calcData && typeof calcData === "object" && Object.values(calcData).length > 0
+              ? Object.values(calcData).reduce((sum, d) => sum + (d.timeSavings || 0), 0)
+              : null
+          }
         }
       ]);
       if (error) {
