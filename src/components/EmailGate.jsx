@@ -25,16 +25,13 @@ export default function EmailGate({ onSubmit, onBack }) {
     }
     // Track response in Supabase
     try {
-      const { error } = await supabase.from("ignite_leads").insert([
+      const { error } = await supabase.from("leads").insert([
         {
-          name,
-          company,
           email,
-          lang,
-          unit,
-          total_savings: null,
-          apps_selected: null,
-          time_savings: null
+          first_name: name,
+          company,
+          source: "ignite",
+          payload: { lang, unit }
         }
       ]);
       if (error) {
