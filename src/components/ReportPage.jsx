@@ -288,7 +288,21 @@ function EmailBanner({ lang, totalSavings, apps, calcData, unit, sessionId }) {
 
   return (
     <div style={{ position: "sticky", top: "70px", zIndex: 90, margin: "0 0 24px 0", background: "linear-gradient(135deg, #0d2137, #1a3a5c)", border: "1px solid var(--plasma)", borderRadius: "var(--radius)", padding: "24px 28px", animation: "slideDown 0.4s ease" }}>
-      <style>{`@keyframes slideDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }`}</style>
+      <style>{`
+        @keyframes slideDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
+        .email-banner-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 8px; align-items: flex-start; }
+        .email-banner-benefits { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+        .email-banner-input { width: 100%; padding: 9px 12px; background: rgba(255,255,255,0.07); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; font-family: 'Barlow', sans-serif; box-sizing: border-box; }
+        .email-banner-input-error { border-color: #f44336 !important; }
+        .email-banner-btn-primary { padding: 9px 18px; background: var(--plasma); color: var(--navy); border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; font-family: 'Barlow Condensed', sans-serif; width: 100%; }
+        .email-banner-btn-skip { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; white-space: nowrap; padding: 9px 0; width: 100%; text-align: center; }
+        @media (max-width: 768px) {
+          .email-banner-grid { grid-template-columns: 1fr; gap: 10px; }
+          .email-banner-benefits { grid-template-columns: 1fr; }
+          .email-banner-input { font-size: 16px; padding: 13px 14px; min-height: 48px; }
+          .email-banner-btn-primary { padding: 14px 18px; font-size: 15px; }
+        }
+      `}</style>
 
       {generated ? (
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
@@ -319,7 +333,7 @@ function EmailBanner({ lang, totalSavings, apps, calcData, unit, sessionId }) {
             <button onClick={() => setDismissed(true)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "20px", padding: "0 0 0 20px", lineHeight: 1, flexShrink: 0 }}>x</button>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "18px" }}>
+          <div className="email-banner-benefits">
             <div style={benefitStyle}>
               <span style={{ fontSize: "16px", flexShrink: 0 }}>📄</span>
               <div>
@@ -350,20 +364,20 @@ function EmailBanner({ lang, totalSavings, apps, calcData, unit, sessionId }) {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto auto", gap: "8px", alignItems: "flex-start" }}>
+          <div className="email-banner-grid">
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={lang === "en" ? "Your name" : lang === "es" ? "Tu nombre" : "Seu nome"}
-              style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.07)", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text)", fontSize: "13px", fontFamily: "'Barlow', sans-serif" }}
+              className="email-banner-input"
             />
             <input
               type="text"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
               placeholder={lang === "en" ? "Company / Shipyard" : lang === "es" ? "Empresa / Astillero" : "Empresa / Estaleiro"}
-              style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.07)", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text)", fontSize: "13px", fontFamily: "'Barlow', sans-serif" }}
+              className="email-banner-input"
             />
             <div>
               <input
@@ -371,20 +385,14 @@ function EmailBanner({ lang, totalSavings, apps, calcData, unit, sessionId }) {
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError(""); }}
                 placeholder={lang === "en" ? "your@email.com" : lang === "es" ? "tu@correo.com" : "seu@email.com"}
-                style={{ width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.07)", border: "1px solid " + (error ? "#f44336" : "var(--border)"), borderRadius: "8px", color: "var(--text)", fontSize: "13px", fontFamily: "'Barlow', sans-serif" }}
+                className={`email-banner-input${error ? " email-banner-input-error" : ""}`}
               />
               {error && <div style={{ fontSize: "10px", color: "#f44336", marginTop: "3px" }}>{error}</div>}
             </div>
-            <button
-              onClick={handleGenerate}
-              style={{ padding: "9px 18px", background: "var(--plasma)", color: "var(--navy)", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "'Barlow Condensed', sans-serif" }}
-            >
+            <button onClick={handleGenerate} className="email-banner-btn-primary">
               {lang === "en" ? "Generate my PDF" : lang === "es" ? "Generar mi PDF" : "Gerar meu PDF"}
             </button>
-            <button
-              onClick={() => setDismissed(true)}
-              style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "12px", whiteSpace: "nowrap", padding: "9px 0" }}
-            >
+            <button onClick={() => setDismissed(true)} className="email-banner-btn-skip">
               {lang === "en" ? "Skip for now" : lang === "es" ? "Omitir" : "Pular"}
             </button>
           </div>
